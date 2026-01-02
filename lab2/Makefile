@@ -47,7 +47,7 @@ run: $(BOOTLOADER_IMG)
 	qemu-system-aarch64 -M raspi3b \
 		-kernel $(BOOTLOADER_IMG) \
 		-display none \
-		-serial stdio
+		-serial null -serial pty
 
 # Çå³ý¾Ž×g®aÎï
 clean:
