@@ -12,7 +12,7 @@ QEMU = qemu-system-aarch64
 # -mcpu=cortex-a53: 指定 Pi 3B 的 CPU 架構
 CFLAGS = -Wall -O2 -ffreestanding -nostdlib -nostartfiles -mcpu=cortex-a53
 
-OBJS = a.o shell.o uart.o mail.o
+OBJS = a.o shell.o uart.o mailbox.o
 ELF = kernel8.elf
 IMG = kernel8.img
 LINKER_SCRIPT = linker.ld

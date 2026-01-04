@@ -3,14 +3,15 @@
 #reload bootloader from 0x80000 to 0x60000
 _start:
     adr x10, .          //raspiberry pi start
-    ldr x11,_stext      //destination
+    ldr x11,= _stext      //destination
     cmp x10, x11        //without bootloader
     b.eq end_relo
-    sub x9,x11,x10      //offset
-    adr x11,_stext
-    ldr x12,_ebss
-    add x12,x12,x9
-    ldr x15, =_stext
+    
+    ldr x12, =_stext
+    ldr x13, =_ebss
+    sub x13,x13,x12
+    add x12,x10,x13
+
 copy_loop:
     ldp x13, x14, [x10], #16 //copy from source address [x10]
     stp x13, x14, [x11], #16 //copy to   target address [x11]
@@ -24,7 +25,7 @@ end_relo:
     ldr x14, =_bl_entry    //jump to boot part 
     br x14
 
-.section "text.boot"
+.section ".text.boot"
 _bl_entry:
     // Check processor ID is zero (Core 0), else hang.
     mrs     x0, mpidr_el1

@@ -5,7 +5,6 @@ SECTIONS {
 
     .text : {
         KEEP(*(.text.relo))
-        _bl_entry = .;
         *(.text.boot)
         *(.text)
         *(.rodata)

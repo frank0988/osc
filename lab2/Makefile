@@ -48,7 +48,19 @@ run: $(BOOTLOADER_IMG)
 		-kernel $(BOOTLOADER_IMG) \
 		-display none \
 		-serial null -serial pty
+debug: $(BOOTLOADER_IMG)
+	qemu-system-aarch64 -M raspi3b \
+		-kernel $(BOOTLOADER_IMG) \
+		-display none \
+		-serial null -serial pty \
+		-S -s
 
-# 清除編譯產物
+# 清除編譯產物:
 clean:
 	rm -rf $(BUILD_DIR) $(BOOTLOADER_IMG)
+
+test:
+	qemu-system-aarch64 -M raspi3b \
+        -kernel $(BOOTLOADER_IMG) \
+        -display none \
+        -serial null -serial stdio

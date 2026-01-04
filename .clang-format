@@ -1,0 +1,16 @@
+---
+Language: Cpp
+BasedOnStyle: Google
+
+AlignConsecutiveMacros: true
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+
+IndentWidth: 4
+ColumnLimit: 120
+
+PointerAlignment: Right
+
+SortIncludes: false
+
+
