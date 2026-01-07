@@ -67,7 +67,6 @@ void uart_readline(char *buf) {
     char c;
     while (1) {
         c = uart_getc();
-        uart_send(c);
         if (c == '\n' || c == '\r') {
             if (i == 0) continue;
             buf[i] = '\0';

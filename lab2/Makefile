@@ -64,3 +64,5 @@ test:
         -kernel $(BOOTLOADER_IMG) \
         -display none \
         -serial null -serial stdio
+runpy: 
+		python3 host/sendimg.py

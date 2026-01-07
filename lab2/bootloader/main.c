@@ -9,7 +9,7 @@ unsigned int atoi(char *s) {
     return res;
 }
 void load_kernel() {
-    unsigned char *kernel_start = (char *)0x80000;
+    unsigned char *kernel_start = (unsigned char *)0x80000;
     char           buf[64];
     unsigned int   chunk_size = 256;
     unsigned int   received   = 0;
@@ -26,9 +26,10 @@ void load_kernel() {
 
         uart_send('K');
     }
-    uart_puts("after load");
-    uart_puts("$ ");
+    uart_puts("\r\n");
     for (int i = 0; i < 1000; i++) asm volatile("nop");
+    asm volatile("dsb sy");
+    asm volatile("ic ialluis");
     asm volatile("dsb sy");
     asm volatile("isb");
     void (*jump)(void) = (void (*)(void))0x80000;
