@@ -55,15 +55,6 @@ void uart_puts(char *s) {
         uart_send(*s++);
     }
 }
-void uart_readline(char *buf) {
-    int  i = 0;
-    char c;
-    c = uart_getc();
-    if (c == '\n' || c == '\r') {
-        buf[i] = '\0';
-    }
-    buf[i++] = c;
-}
 int strcmp(const char *s1, const char *s2) {
     while (*s1 && (*s1 == *s2)) {
         s1++;

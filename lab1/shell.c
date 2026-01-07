@@ -6,6 +6,7 @@ int main() {
     while (*AUX_MU_LSR_REG & 0x01) {
         uart_getc();
     }
+    uart_getc();
     uart_puts("Welcome");
     char cmd_buffer[MAX_CMD_LEN];
     while (1) {
