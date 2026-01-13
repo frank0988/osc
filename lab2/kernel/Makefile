@@ -12,7 +12,7 @@ QEMU = qemu-system-aarch64
 # -mcpu=cortex-a53: 指定 Pi 3B 的 CPU 架構
 CFLAGS = -Wall -O2 -ffreestanding -nostdlib -nostartfiles -mcpu=cortex-a53
 
-OBJS = a.o shell.o uart.o mailbox.o cpio.o
+OBJS = a.o shell.o uart.o mailbox.o cpio.o reset.o
 ELF = kernel8.elf
 IMG = kernel8.img
 LINKER_SCRIPT = linker.ld
@@ -38,4 +38,7 @@ clean:
 # --- 修改重點：讓 UART 輸出到終端機 ---
 # -serial null -serial stdio: 把 QEMU 的 Mini UART 對應到你的 Terminal
 run: $(IMG)
-	$(QEMU) -M raspi3b -kernel $(IMG) -serial null -serial stdio -display none
+	$(QEMU) -M raspi3b \-kernel $(IMG) \
+  					-initrd initramfs.cpio \
+            -serial null -serial stdio \
+            -display none

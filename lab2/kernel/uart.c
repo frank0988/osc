@@ -44,6 +44,30 @@ void uart_send(unsigned int c) {
     // write data to AUX_MU_IO_REG
     *AUX_MU_IO_REG = c;
 }
+void uart_readline(char *buf, int max_len) {
+    int idx = 0;
+    while (1) {
+        char c = uart_getc();
+        // end at \r \n
+        if (c == '\r' || c == '\n') {
+            buf[idx] = '\0';
+            uart_puts("\r\n");
+            break;
+        }
+        // bakespace
+        if (c == 8 || c == 127) {
+            if (idx > 0) {
+                idx--;
+                uart_puts("\b \b");
+            }
+        } else {
+            if (idx < max_len - 1) {
+                buf[idx++] = c;
+                uart_send(c);
+            }
+        }
+    }
+}
 char uart_getc() {
     while (!(*AUX_MU_LSR_REG & 0x01)) {
         asm volatile("nop");
@@ -84,4 +108,45 @@ void uart_hex(unsigned int d) {
         n += n > 9 ? 0x37 : 0x30;
         uart_send(n);
     }
+}
+// copy from anther way ,need to understand
+char *strchr(const char *s, int c) {
+    while (*s != (char)c) {
+        if (!*s++) return NULL;
+    }
+    return (char *)s;
+}
+char *strtok(char *str, const char *delim) {
+    static char *next_ptr = NULL;
+    if (str != NULL) {
+        next_ptr = str;
+    }
+
+    if (next_ptr == NULL || *next_ptr == '\0') {
+        return NULL;
+    }
+
+    char *start = next_ptr;
+    while (*start != '\0' && strchr(delim, *start)) {
+        start++;
+    }
+
+    if (*start == '\0') {
+        next_ptr = NULL;
+        return NULL;
+    }
+
+    char *end = start;
+    while (*end != '\0' && !strchr(delim, *end)) {
+        end++;
+    }
+
+    if (*end != '\0') {
+        *end     = '\0';
+        next_ptr = end + 1;
+    } else {
+        next_ptr = NULL;
+    }
+
+    return start;
 }

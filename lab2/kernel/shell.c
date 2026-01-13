@@ -1,8 +1,60 @@
-#include <string.h>
 #define MAX_CMD_LEN 256
 #include "mailbox.h"
 #include "uart.h"
 #include "cpio.h"
+#include "reset.h"
+void do_help(int argc, char **argv) {
+    uart_puts("Available commands: help, hello, reboot, hw info ,cpio_ls,cpio_cat\n");
+};
+void do_hello(int argc, char **argv) { uart_puts("Hello World!\n"); };
+void do_reboot(int argc, char **argv) {
+    uart_puts("reboot\n");
+    reset(10);
+    while (1) {
+    }
+};
+void do_hw_info(int argc, char **argv) {
+    get_board_revision();
+    get_arm_memory();
+};
+void do_cpio_ls(int argc, char **argv) { cpio_ls((void *)0x8000000); };
+void do_cpio_cat(int argc, char **argv) { cpio_cat((void *)0x8000000, argv[1]); };
+typedef struct command {
+    const char *name;
+    const char *help;
+    void (*func)(int argc, char **argv);
+} command_t;
+static command_t cmd_table[] = {{"help", "display coomands", do_help},
+                                {"hello", "say hello", do_hello},
+                                {"reboot", "reboot the device", do_reboot},
+                                {"hw_info", "List hardware info", do_hw_info},
+                                {"cpio_ls", "List file in CPIO", do_cpio_ls},
+                                {"cpio_cat", "a", do_cpio_cat},
+                                {0, 0, 0}};
+
+void shell_execute(char *cmd_buffer) {
+    char *argv[16];  // max 16 words
+    int   argc = 0;
+
+    // tokenize
+    char *token = strtok(cmd_buffer, " ");
+    while (token != NULL && argc < 16) {
+        argv[argc++] = token;
+        token        = strtok(NULL, " ");
+    }
+
+    if (argc == 0) return;
+
+    for (int i = 0; cmd_table[i].name != NULL; i++) {
+        if (strcmp(argv[0], cmd_table[i].name) == 0) {
+            cmd_table[i].func(argc, argv);
+            return;
+        }
+    }
+
+    uart_puts("Unknown command\n");
+}
+
 int main() {
     uart_init();
     while (*AUX_MU_LSR_REG & 0x01) {
@@ -13,49 +65,8 @@ int main() {
     char cmd_buffer[MAX_CMD_LEN];
     while (1) {
         uart_puts("# ");
-        int idx = 0;
-        while (1) {
-            char c = uart_getc();
-            if (c == '\n' || c == '\r') {
-                uart_puts("\n");
-                cmd_buffer[idx] = '\0';
-                break;
-            }
-            // 處理 Backspace (Delete)
-            // 127 是 DEL, 8 是 Backspace，不同 terminal 送出的碼不同
-            else if (c == 127 || c == 8) {
-                if (idx > 0) {
-                    idx--;
-                    // 視覺上的刪除：倒退一格 -> 印空白蓋掉 -> 再倒退一格
-                    uart_puts("\b \b");
-                }
-            } else {
-                if (idx < MAX_CMD_LEN - 1) {
-                    cmd_buffer[idx++] = c;
-                    uart_send(c);
-                }
-            }
-        }
-
-        if (strcmp(cmd_buffer, "help") == 0) {
-            uart_puts("Available commands: help, hello, reboot, hw info ,cpio_ls,cpio_cat\n");
-        } else if (strcmp(cmd_buffer, "hello") == 0) {
-            uart_puts("Hello World!\n");
-        } else if (strcmp(cmd_buffer, "reboot") == 0) {
-            uart_puts("Rebooting...\n");
-        } else if (strcmp(cmd_buffer, "hw info") == 0) {
-            get_board_revision();
-            get_arm_memory();
-        } else if (strcmp(cmd_buffer, "cpio_ls") == 0) {
-            cpio_ls((void *)0x8000000);
-        } else if (strncmp(cmd_buffer, "cpio_cat ", 9) == 0) {
-            cpio_cat((void *)0x8000000, cmd_buffer + 4);
-        }
-
-        else if (idx > 0) {
-            uart_puts("Unknown command: ");
-            uart_puts(cmd_buffer);
-            uart_puts("\n");
-        }
+        uart_readline(cmd_buffer, MAX_CMD_LEN);
+        shell_execute(cmd_buffer);
     }
+    return 0;
 }

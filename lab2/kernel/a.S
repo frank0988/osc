@@ -34,3 +34,14 @@ hang:
     // Infinite loop for other cores or if main returns.
     wfe
     b       hang
+
+.global put32
+put32:
+    str w1, [x0]   
+    ret
+
+// unsigned int get32(long addr)
+.global get32
+get32:
+    ldr w0, [x0]    
+    ret
