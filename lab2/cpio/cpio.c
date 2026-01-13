@@ -1,4 +1,5 @@
 #include "cpio.h"
+#include "uart.h"
 typedef unsigned long size_t;
 unsigned int          hex2int(const char *s, int len) {
     unsigned int r = 0;
@@ -32,8 +33,8 @@ typedef struct {
     unsigned int namesize;
     unsigned int filesize;
 } cpio_info_t;
-typedef void (*cpio_callback)(const char *name, const char *data, unsigned int size);
-void cpio_for_each(void *addr, cpio_callback cb) {
+typedef void (*cpio_callback)(const char *name, const char *data, unsigned int size, void *arg);
+void cpio_for_each(void *addr, cpio_callback cb, void *arg) {
     cpio_info_t info;
     info.current         = (const char *)addr;
     info.cs              = CPIO_GET_HEADER;
@@ -74,7 +75,7 @@ void cpio_for_each(void *addr, cpio_callback cb) {
                 data = info.current;
 
                 if (cb) {
-                    cb(pathname, data, info.filesize);
+                    cb(pathname, data, info.filesize, arg);
                 }
 
                 unsigned int data_offset = (info.filesize + 3) & ~3;
@@ -89,4 +90,54 @@ void cpio_for_each(void *addr, cpio_callback cb) {
         }
         info.cs = ns;
     }
+}
+void ls_callback(const char *name, const char *data, unsigned int size, void *arg) {
+    uart_puts(name);
+    uart_send('\n');
+}
+void cpio_ls(void *addr) { cpio_for_each(addr, ls_callback, 0); }
+typedef struct {
+    const char  *target;  // 要找的檔名 (輸入)
+    const char  *data;    // 找到的內容位址 (輸出)
+    unsigned int size;    // 找到的內容大小 (輸出)
+} find_ctx;
+
+void find_callback(const char *name, const char *data, unsigned int size, void *arg) {
+    find_ctx *ctx = (find_ctx *)arg;
+
+    // 如果已經找到了，就不再比對
+    if (ctx->data) return;
+
+    // 比對檔名 (假設你有實作 strcmp)
+    if (strcmp(name, ctx->target) == 0) {
+        ctx->data = data;
+        ctx->size = size;
+    }
+}
+
+void cpio_cat(void *addr, const char *filename) {
+    find_ctx ctx = {.target = filename, .data = 0, .size = 0};
+
+    cpio_for_each(addr, find_callback, &ctx);
+
+    if (ctx.data) {
+        // 印出檔案內容 (注意檔案可能不是以 \0 結尾，需根據 size 印出)
+        for (unsigned int i = 0; i < ctx.size; i++) {
+            uart_send(ctx.data[i]);
+        }
+        uart_puts("\n");
+    } else {
+        uart_puts("File not found.\n");
+    }
+}
+void main() {
+    // QEMU 預設是 0x8000000
+    // 如果是 Rpi3 實機且照 config.txt 設定，則是 0x20000000
+    void *cpio_base = (void *)0x8000000;
+
+    uart_puts("Listing files in initramfs:\n");
+    cpio_ls(cpio_base);
+
+    uart_puts("\nReading content of 'hello.txt':\n");
+    cpio_cat(cpio_base, "hello.txt");
 }
