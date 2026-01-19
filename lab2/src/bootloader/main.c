@@ -13,7 +13,7 @@ void load_kernel() {
     char           buf[64];
     unsigned int   chunk_size = 256;
     unsigned int   received   = 0;
-    uart_readline(buf);
+    uart_readline(buf, 64);
     unsigned int kernel_size = atoi(buf);
     uart_puts("Start to load the kernel image... \r\n");
     while (received < kernel_size) {
@@ -28,16 +28,14 @@ void load_kernel() {
     }
     uart_puts("\r\n");
     for (int i = 0; i < 1000; i++) asm volatile("nop");
+    void (*jump)(void *) = (void (*)(void *))0x80000;
+    
     asm volatile("dsb sy");
     asm volatile("ic ialluis");
-    asm volatile("dsb sy");
     asm volatile("isb");
-    void (*jump)(void) = (void (*)(void))0x80000;
-    jump();
 
-    /*
-    void(*jump)(char *) = (void (*)(char *))0x80000;
-    jump(dtb_ptr);*/
+    jump(dtb_ptr);
+
 }
 int main() {
     uart_init();

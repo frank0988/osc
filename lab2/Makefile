@@ -1,68 +1,96 @@
-# ¹¤¾ßæœÇ°¾Y£¬Õˆ´_±£ÒÑ°²Ñb aarch64-linux-gnu ¹¤¾ßæœ
-CC = aarch64-linux-gnu-gcc
-LD = aarch64-linux-gnu-ld
-OBJCOPY = aarch64-linux-gnu-objcopy
+# --- å·¥å…·éˆè¨­å®š ---
+CROSS_COMPILE = aarch64-linux-gnu-
+CC      = $(CROSS_COMPILE)gcc
+LD      = $(CROSS_COMPILE)ld
+OBJCOPY = $(CROSS_COMPILE)objcopy
+QEMU    = qemu-system-aarch64
 
-# ¾×gßxí—
-CFLAGS = -Wall -ffreestanding -nostdinc -nostdlib -nostartfiles -Ibootloader
-# ßB½Yßxí—£¬Ê¹ÓÃÄúÌá¹©µÄ linker.ld
-LDFLAGS = -T bootloader/linker.ld
-
-# Ô­Ê¼´aÂ·½
-SRC_DIR = bootloader
+# --- ç›®éŒ„è¨­å®š ---
+SRC_DIR   = src
+INC_DIR   = include
 BUILD_DIR = build
+CONFIG_DIR = config
 
-# Œ¤ÕÒËùÓĞ .c ºÍ .s ™n°¸
-C_SRCS = $(wildcard $(SRC_DIR)/*.c)
-S_SRCS = $(wildcard $(SRC_DIR)/*.s)
-OBJS = $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o, $(C_SRCS)) \
-       $(patsubst $(SRC_DIR)/%.s, $(BUILD_DIR)/%.o, $(S_SRCS))
+# --- ç·¨è­¯åƒæ•¸ ---
+# æ•´åˆè‡ª Makefile 1 & 2 [cite: 1, 3]
+CFLAGS = -Wall -O2 -ffreestanding -nostdlib -nostartfiles -mcpu=cortex-a53 -I$(INC_DIR)
 
-# Ä¿˜Ë™n°¸Ãû·Q
-BOOTLOADER_IMG = bootloader.img
-BOOTLOADER_ELF = $(BUILD_DIR)/bootloader.elf
+# --- æª”æ¡ˆå®šç¾© ---
+# å…±ç”¨é©…å‹•ç¨‹å¼ (Shared Drivers)
+DRV_C_SRCS = $(wildcard $(SRC_DIR)/drivers/*.c)
+DRV_S_SRCS = $(wildcard $(SRC_DIR)/drivers/*.S)
+DRV_C_OBJS = $(patsubst $(SRC_DIR)/drivers/%.c, $(BUILD_DIR)/drivers/%.o, $(DRV_C_SRCS))
+DRV_S_OBJS = $(patsubst $(SRC_DIR)/drivers/%.S, $(BUILD_DIR)/drivers/%.o, $(DRV_S_SRCS))
+DRV_OBJS = $(DRV_C_OBJS) $(DRV_S_OBJS)
 
-.PHONY: all clean run
+# Bootloader ç›¸é—œ
+BOOT_SRCS = $(wildcard $(SRC_DIR)/bootloader/*.c) $(wildcard $(SRC_DIR)/bootloader/*.S)
+BOOT_OBJS = $(patsubst $(SRC_DIR)/bootloader/%, $(BUILD_DIR)/bootloader/%.o, $(BOOT_SRCS))
+BOOT_ELF  = $(BUILD_DIR)/bootloader.elf
+BOOT_IMG  = bootloader.img
+BOOT_LD   = $(CONFIG_DIR)/bootloader.ld # è«‹å°‡ bootloader çš„ linker.ld ç§»è‡³æ­¤è™• [cite: 3]
 
-all: $(BOOTLOADER_IMG)
+# Kernel ç›¸é—œ
+KERN_SRCS = $(wildcard $(SRC_DIR)/kernel/*.c) $(wildcard $(SRC_DIR)/kernel/*.S)
+KERN_OBJS = $(patsubst $(SRC_DIR)/kernel/%, $(BUILD_DIR)/kernel/%.o, $(KERN_SRCS))
+KERN_ELF  = $(BUILD_DIR)/kernel8.elf
+KERN_IMG  = kernel8.img
+KERN_LD   = $(CONFIG_DIR)/kernel.ld     # è«‹å°‡ kernel çš„ linker.ld ç§»è‡³æ­¤è™• 
 
-# ½¨Á¢¾×gÄ¿ä›K¾×g C ™n°¸
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
-	@mkdir -p $(BUILD_DIR)
+# --- ä¸»è¦ç›®æ¨™ ---
+.PHONY: all clean run_kernel run_bootloader
+
+all: $(BOOT_IMG) $(KERN_IMG)
+
+# --- ç·¨è­¯è¦å‰‡ ---
+
+# ç·¨è­¯é©…å‹•ç¨‹å¼
+$(BUILD_DIR)/drivers/%.o: $(SRC_DIR)/drivers/%.c
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# ½¨Á¢¾×gÄ¿ä›K¾×g Assembly ™n°¸
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.s
-	@mkdir -p $(BUILD_DIR)
+$(BUILD_DIR)/drivers/%.o: $(SRC_DIR)/drivers/%.S
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# ßB½YKÉú³É¶şßMÎ»Ó°Ïñ™n
-$(BOOTLOADER_IMG): $(OBJS)
-	$(LD) $(LDFLAGS) $(OBJS) -o $(BOOTLOADER_ELF)
-	$(OBJCOPY) -O binary $(BOOTLOADER_ELF) $(BOOTLOADER_IMG)
+# ç·¨è­¯ Bootloader åŸå§‹ç¢¼
+$(BUILD_DIR)/bootloader/%.o: $(SRC_DIR)/bootloader/%
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
 
-# œyÔ‡ Bootloader µÄ QEMU Ö¸Áî
-# Ê¹ÓÃ -serial pty ÒÔ±ã×Œ python Ä_±¾ßB¾€
-run: $(BOOTLOADER_IMG)
-	qemu-system-aarch64 -M raspi3b \
-		-kernel $(BOOTLOADER_IMG) \
-		-display none \
-		-serial null -serial pty
-debug: $(BOOTLOADER_IMG)
-	qemu-system-aarch64 -M raspi3b \
-		-kernel $(BOOTLOADER_IMG) \
-		-display none \
-		-serial null -serial pty \
-		-S -s
+# ç·¨è­¯ Kernel åŸå§‹ç¢¼
+$(BUILD_DIR)/kernel/%.o: $(SRC_DIR)/kernel/%
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
 
-# Çå³ı¾×g®aÎï:
+# é€£çµ Bootloader (åŒ…å«å…±ç”¨é©…å‹•)
+$(BOOT_IMG): $(BOOT_OBJS) $(DRV_OBJS)
+	$(LD) -T $(BOOT_LD) -o $(BOOT_ELF) $(BOOT_OBJS) $(DRV_OBJS)
+	$(OBJCOPY) -O binary $(BOOT_ELF) $(BOOT_IMG)
+
+# é€£çµ Kernel (åŒ…å«å…±ç”¨é©…å‹•)
+$(KERN_IMG): $(KERN_OBJS) $(DRV_OBJS)
+	$(LD) -T $(KERN_LD) -o $(KERN_ELF) $(KERN_OBJS) $(DRV_OBJS)
+	$(OBJCOPY) -O binary $(KERN_ELF) $(KERN_IMG)
+
+# --- æ¸…ç† ---
 clean:
-	rm -rf $(BUILD_DIR) $(BOOTLOADER_IMG)
+	rm -rf $(BUILD_DIR) $(BOOT_IMG) $(KERN_IMG)
 
-test:
-	qemu-system-aarch64 -M raspi3b \
-        -kernel $(BOOTLOADER_IMG) \
-        -display none \
-        -serial null -serial stdio
-runpy: 
-		python3 host/sendimg.py
+# --- åŸ·è¡ŒæŒ‡ä»¤ (æ•´åˆè‡ªåŸæœ¬çš„ run ç›®æ¨™) ---
+
+# åŸ·è¡Œ Kernel [cite: 2]
+run_kernel: $(KERN_IMG)
+	$(QEMU) -M raspi3b -kernel $(KERN_IMG) \
+		-initrd $(CONFIG_DIR)/initramfs.cpio \
+		-dtb $(CONFIG_DIR)/bcm2710-rpi-3-b-plus.dtb \
+		-serial null -serial stdio \
+		-display none
+
+# åŸ·è¡Œ Bootloader (ä½¿ç”¨åŸæœ¬çš„ pty è¨­å®š) [cite: 4]
+run_bootloader: $(BOOT_IMG)
+	$(QEMU) -M raspi3b -kernel $(BOOT_IMG) \
+		-dtb bcm2710-rpi-3-b-plus.dtb \
+		-initrd initramfs.cpio \
+		-serial pty \
+		-display none

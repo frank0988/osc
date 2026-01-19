@@ -1,6 +1,7 @@
 #include "cpio.h"
 #include "uart.h"
 typedef unsigned long size_t;
+void *CPIO_DEFAULT_ADDR = (void *)0x8000000;
 unsigned int          hex2int(const char *s, int len) {
     unsigned int r = 0;
     for (int i = 0; i < len; i++) {
@@ -62,10 +63,9 @@ typedef struct {
 void find_callback(const char *name, const char *data, unsigned int size, void *arg) {
     find_ctx *ctx = (find_ctx *)arg;
 
-    // 如果已經找到了，就不再比對
     if (ctx->data) return;
 
-    // 比對檔名 (假設你有實作 strcmp)
+    
     if (strcmp(name, ctx->target) == 0) {
         ctx->data = data;
         ctx->size = size;

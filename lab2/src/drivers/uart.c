@@ -74,7 +74,7 @@ char uart_getc() {
     }
     return (char)(*AUX_MU_IO_REG);
 }
-void uart_puts(char *s) {
+void uart_puts(const char *s) {
     while (*s) {
         if (*s == '\n') uart_send('\r');
         uart_send(*s++);
@@ -149,4 +149,15 @@ char *strtok(char *str, const char *delim) {
     }
 
     return start;
+}
+void uart_put_hex(uint64_t v) {
+    char hex_table[] = "0123456789ABCDEF";
+    for (int i = 60; i >= 0; i -= 4) {
+        uart_send(hex_table[(v >> i) & 0xF]);
+    }
+}void uart_put_hex_32(uint32_t v) {
+    char hex_table[] = "0123456789ABCDEF";
+    for (int i = 28; i >= 0; i -= 4) {
+        uart_send(hex_table[(v >> i) & 0xF]);
+    }
 }

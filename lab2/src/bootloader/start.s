@@ -2,6 +2,9 @@
 .global _start
 #reload bootloader from 0x80000 to 0x60000
 _start:
+    mov     x21, x0//store dtb to x21
+
+
     adr x10, .          //raspiberry pi start
     ldr x11,= _stext      //destination
     cmp x10, x11        //without bootloader
@@ -52,7 +55,10 @@ bss_loop:
     b.lt    bss_loop
 
 enter_main:
-    // Jump to C main function.
+    ldr     x0, =dtb_ptr
+    str     x21, [x0]
+
+    mov     x0, x21        
     bl      main
 
 hang:

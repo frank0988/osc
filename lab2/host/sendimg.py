@@ -33,5 +33,5 @@ def send_img(ser, kernel):
 
 
 if __name__ == "__main__":
-    ser = serial.Serial("/dev/pts/2", BAUD_RATE, timeout=5)
+    ser = serial.Serial("/dev/pts/3", BAUD_RATE, timeout=5)
     send_img(ser, "kernel/kernel8.img")

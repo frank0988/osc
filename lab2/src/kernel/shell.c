@@ -4,7 +4,7 @@
 #include "cpio.h"
 #include "reset.h"
 void do_help(int argc, char **argv) {
-    uart_puts("Available commands: help, hello, reboot, hw info ,cpio_ls,cpio_cat\n");
+    uart_puts("Available commands: help, hello, reboot, hw_info ,cpio_ls,cpio_cat\n");
 };
 void do_hello(int argc, char **argv) { uart_puts("Hello World!\n"); };
 void do_reboot(int argc, char **argv) {
@@ -17,8 +17,18 @@ void do_hw_info(int argc, char **argv) {
     get_board_revision();
     get_arm_memory();
 };
-void do_cpio_ls(int argc, char **argv) { cpio_ls((void *)0x8000000); };
-void do_cpio_cat(int argc, char **argv) { cpio_cat((void *)0x8000000, argv[1]); };
+void do_cpio_ls(int argc, char **argv) { 
+    cpio_ls(CPIO_DEFAULT_ADDR); 
+}
+
+void do_cpio_cat(int argc, char **argv) { 
+    if (argc < 2) {
+        uart_puts("Usage: cat <filename>\n");
+        return;
+    }
+    cpio_cat(CPIO_DEFAULT_ADDR, argv[1]); 
+}
+
 typedef struct command {
     const char *name;
     const char *help;
@@ -55,13 +65,9 @@ void shell_execute(char *cmd_buffer) {
     uart_puts("Unknown command\n");
 }
 
-int main() {
-    uart_init();
-    while (*AUX_MU_LSR_REG & 0x01) {
-        uart_getc();
-    }
-    uart_getc();
-    uart_puts("Welcome");
+int shell() {
+    
+    uart_puts("Welcome to the shell\n");
     char cmd_buffer[MAX_CMD_LEN];
     while (1) {
         uart_puts("# ");

@@ -2,6 +2,7 @@
 .global _start
 
 _start:
+    mov     x21, x0
     // Check processor ID is zero (Core 0), else hang.
     mrs     x0, mpidr_el1
     and     x0, x0, #3
@@ -9,6 +10,7 @@ _start:
     b       hang
 
 master:
+    
     // Initialize stack pointer.
     ldr     x0, =_stack_top
     mov     sp, x0
@@ -28,20 +30,11 @@ bss_loop:
 
 enter_main:
     // Jump to C main function.
-    bl      main
+    mov     x0, x21
+    bl      kernel_main
 
 hang:
     // Infinite loop for other cores or if main returns.
     wfe
     b       hang
 
-.global put32
-put32:
-    str w1, [x0]   
-    ret
-
-// unsigned int get32(long addr)
-.global get32
-get32:
-    ldr w0, [x0]    
-    ret
