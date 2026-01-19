@@ -18,6 +18,7 @@ typedef unsigned long size_t;
 void  uart_init();
 void  uart_send(unsigned int c);
 void  uart_readline(char *buf, int max_len);
+void  uart_readline_for_boot(char *buf); 
 char  uart_getc();
 void  uart_puts(const char *s);
 int   strcmp(const char *s1, const char *s2);

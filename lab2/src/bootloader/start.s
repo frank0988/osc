@@ -21,6 +21,7 @@ copy_loop:
     cmp x10, x12
     b.lo copy_loop
 
+    isb
     ldr x16, =end_relo
     br  x16
 

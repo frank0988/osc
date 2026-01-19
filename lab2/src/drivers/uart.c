@@ -44,6 +44,25 @@ void uart_send(unsigned int c) {
     // write data to AUX_MU_IO_REG
     *AUX_MU_IO_REG = c;
 }
+void uart_readline_for_boot(char *buf) {
+    int  i = 0;
+    char c;
+    while (1) {
+        c = uart_getc();
+        if (c == '\r') {
+            c = uart_getc();  // consume the \n after \r
+            if (i == 0) continue;
+            buf[i] = '\0';
+            break;
+        }
+        if (c == '\n') {
+            if (i == 0) continue;
+            buf[i] = '\0';
+            break;
+        }
+        buf[i++] = c;
+    }
+}
 void uart_readline(char *buf, int max_len) {
     int idx = 0;
     while (1) {

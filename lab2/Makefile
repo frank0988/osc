@@ -90,7 +90,7 @@ run_kernel: $(KERN_IMG)
 # 執行 Bootloader (使用原本的 pty 設定) [cite: 4]
 run_bootloader: $(BOOT_IMG)
 	$(QEMU) -M raspi3b -kernel $(BOOT_IMG) \
-		-dtb bcm2710-rpi-3-b-plus.dtb \
-		-initrd initramfs.cpio \
-		-serial pty \
+		-initrd $(CONFIG_DIR)/initramfs.cpio \
+		-dtb $(CONFIG_DIR)/bcm2710-rpi-3-b-plus.dtb \
+		-serial null -serial pty \
 		-display none
