@@ -104,3 +104,7 @@ run_gdb: $(KERN_IMG)
 		-display none
 
 gdb: gdb-multiarch $(KERN_ELF)
+	gdb-multiarch $(KERN_ELF)
+
+cpio:
+	cd rootfs && find . | cpio -o -H newc > ../$(CONFIG_DIR)/initramfs.cpio

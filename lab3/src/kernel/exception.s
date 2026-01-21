@@ -48,29 +48,29 @@
 .global exception_vector_table
 exception_vector_table:
     /* Group 1: Current EL with SP0 */
-    ventry el_curr_sp0_sync
-    ventry el_curr_sp0_irq
-    ventry el_curr_sp0_fiq
-    ventry el_curr_sp0_serror
+    ventry sync_handler_el1t
+    ventry irq_handler_el1t
+    ventry fiq_handler_el1t
+    ventry serror_handler_el1t
 
     /* Group 2: Current EL with SPx */
-    ventry el_curr_spx_sync
-    ventry el_curr_spx_irq
-    ventry el_curr_spx_fiq
-    ventry el_curr_spx_serror
+    ventry sync_handler_el1h
+    ventry irq_handler_el1h
+    ventry fiq_handler_el1h
+    ventry serror_handler_el1h
 
     /* Group 3: Lower EL (AArch64) */
-    ventry el_lower_64_sync
-    ventry el_lower_64_irq
-    ventry el_lower_64_fiq
-    ventry el_lower_64_serror
+    ventry sync_handler_el0_64
+    ventry irq_handler_el0_64
+    ventry fiq_handler_el0_64
+    ventry serror_handler_el0_64
 
     /* Group 4: Lower EL (AArch32) */
-    ventry el_lower_32_sync
-    ventry el_lower_32_irq
-    ventry el_lower_32_fiq
-    ventry el_lower_32_serror
-    
+    ventry sync_handler_el0_32
+    ventry irq_handler_el0_32
+    ventry fiq_handler_el0_32
+    ventry serror_handler_el0_32
+
 sync_handler_el1h:
     save_all
     bl sync_handler_c
@@ -82,3 +82,41 @@ irq_handler_el1h:
     bl irq_handler_c
     load_all
     eret
+
+/* Exception handlers */
+
+/* Current EL with SP0 - 不应该发生 */
+sync_handler_el1t:
+    b sync_handler_el1t
+irq_handler_el1t:
+    b irq_handler_el1t
+fiq_handler_el1t:
+    b fiq_handler_el1t
+serror_handler_el1t:
+    b serror_handler_el1t
+
+/* Current EL with SPx - 先挂起FIQ和SError */
+fiq_handler_el1h:
+    b fiq_handler_el1h
+serror_handler_el1h:
+    b serror_handler_el1h
+
+/* Lower EL (AArch64) - 先挂起 */
+sync_handler_el0_64:
+    b sync_handler_el0_64
+irq_handler_el0_64:
+    b irq_handler_el0_64
+fiq_handler_el0_64:
+    b fiq_handler_el0_64
+serror_handler_el0_64:
+    b serror_handler_el0_64
+
+/* Lower EL (AArch32) - 先挂起 */
+sync_handler_el0_32:
+    b sync_handler_el0_32
+irq_handler_el0_32:
+    b irq_handler_el0_32
+fiq_handler_el0_32:
+    b fiq_handler_el0_32
+serror_handler_el0_32:
+    b serror_handler_el0_32

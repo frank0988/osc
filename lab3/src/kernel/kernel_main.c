@@ -17,10 +17,12 @@ void kernel_main(void *dtb_ptr) {
     uart_puts("Kernel initialized.\n");
     
     // 改用組合拳印出位址
+    
     uart_puts("DTB address: 0x");
     uart_put_hex((uint64_t)dtb_ptr);
     uart_puts("\n");
-
+    
+    uart_printf("DTB address: %p\n", dtb_ptr);
     if (dtb_ptr) {
         uart_puts("dtb test\n");
         //dtb_traverse(dtb_ptr, debug_dump_callback);
@@ -36,8 +38,9 @@ void kernel_main(void *dtb_ptr) {
     } else {
         uart_puts("Initrd not found in DTB.\n");
     }
-
+    asm volatile("svc #1"); 
     uart_puts("Press any key to start shell...\n");
     uart_getc();
+    
     shell();
 }

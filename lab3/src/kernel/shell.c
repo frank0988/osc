@@ -20,7 +20,24 @@ void do_hw_info(int argc, char **argv) {
 void do_cpio_ls(int argc, char **argv) { 
     cpio_ls(CPIO_DEFAULT_ADDR); 
 }
-
+void do_run_user_program(int argc, char **argv) {
+    if (argc < 2) {
+        uart_puts("Usage: run <program_name>\n");
+        return;
+    }
+    run_user_program(argv[1]);
+}
+void run_user_program(char* program_name) {
+    void* program_addr = cpio_get_file(program_name); // 你之前寫過的 cpio 函數
+    
+    // 為 User Program 分配一個獨立的 Stack (簡單起見可以先用靜態陣列)
+    static char user_stack[4096];
+    
+    uart_send_string("Jumping to EL0...\r\n");
+    
+    // 跳轉到 EL0，傳入程式地址與 stack 頂端 (往下長)
+    move_to_user_mode(program_addr, user_stack + 4096);
+}
 void do_cpio_cat(int argc, char **argv) { 
     if (argc < 2) {
         uart_puts("Usage: cat <filename>\n");
@@ -40,6 +57,7 @@ static command_t cmd_table[] = {{"help", "display coomands", do_help},
                                 {"hw_info", "List hardware info", do_hw_info},
                                 {"cpio_ls", "List file in CPIO", do_cpio_ls},
                                 {"cpio_cat", "a", do_cpio_cat},
+                                {"run", "run a user program", do_run_user_program},
                                 {0, 0, 0}};
 
 void shell_execute(char *cmd_buffer) {
