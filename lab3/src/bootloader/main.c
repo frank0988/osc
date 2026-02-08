@@ -1,13 +1,6 @@
 #include "uart.h"
 extern char *dtb_ptr;
-unsigned int atoi(char *s) {
-    unsigned int res = 0;
-    while (*s >= '0' && *s <= '9') {
-        res = res * 10 + (*s - '0');
-        s++;
-    }
-    return res;
-}
+
 void load_kernel() {
     unsigned char *kernel_start = (unsigned char *)0x80000;
     char           buf[64];

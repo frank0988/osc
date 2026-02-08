@@ -1,6 +1,7 @@
 #include "shell.h"
 #include "uart.h"
-#include "dtb.h"  // 包含你剛剛寫好的 Parser
+#include "dtb.h"
+#include "timer.h"
 
 // 建立一個全域變數或靜態變數來存放解析結果（例如 Initrd 位址）
 extern void *initrd_start; //define in dtb.c
@@ -16,11 +17,6 @@ void kernel_main(void *dtb_ptr) {
 
     uart_puts("Kernel initialized.\n");
     
-    // 改用組合拳印出位址
-    
-    uart_puts("DTB address: 0x");
-    uart_put_hex((uint64_t)dtb_ptr);
-    uart_puts("\n");
     
     uart_printf("DTB address: %p\n", dtb_ptr);
     if (dtb_ptr) {
@@ -38,9 +34,8 @@ void kernel_main(void *dtb_ptr) {
     } else {
         uart_puts("Initrd not found in DTB.\n");
     }
-    asm volatile("svc #1"); 
-    uart_puts("Press any key to start shell...\n");
-    uart_getc();
     
+    timer_init();
+    uart_getc(); // 等待使用者輸入，確保核心定時器中斷能被觸發
     shell();
 }

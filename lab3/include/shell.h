@@ -16,9 +16,11 @@ void do_reboot(int argc, char **argv);
 void do_hw_info(int argc, char **argv);
 void do_cpio_ls(int argc, char **argv);
 void do_cpio_cat(int argc, char **argv);
-
+void do_run_user_program(int argc, char **argv);
+void do_timeout(int argc, char **argv);
 // Shell functions
 void shell_execute(char *cmd_buffer);
 int shell(void);
+void run_user_program(const char *program_name);
 
 #endif  // SHELL_H

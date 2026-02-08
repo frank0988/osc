@@ -1,13 +1,42 @@
 #include "uart.h"
 #include "gpio.h"
+#include "stddef.h"
 #include <stdarg.h>
-typedef unsigned long size_t;
 void                  delay(unsigned int x) {
     while (x--) {
         asm volatile("nop");
     }
 }
+unsigned int atoi(char *s) {
+    unsigned int res = 0;
+    while (*s >= '0' && *s <= '9') {
+        res = res * 10 + (*s - '0');
+        s++;
+    }
+    return res;
+}
 
+static uart_fifo_t rx_fifo = { .head = 0, .tail = 0 };
+static uart_fifo_t tx_fifo = { .head = 0, .tail = 0 };
+static inline uint32_t fifo_count(uart_fifo_t *f) {
+    return f->tail - f->head; 
+}
+static inline int fifo_is_full(uart_fifo_t *f) {
+    return fifo_count(f) >= UART_FIFO_SIZE;
+}
+
+static inline void fifo_push(char c, uart_fifo_t *f) {
+    if (!fifo_is_full(f)) {
+        f->buffer[f->tail & FIFO_MASK] = c;
+        f->tail++; 
+    }
+}
+
+static inline char fifo_pop(uart_fifo_t *f) {
+    char c = f->buffer[f->head & FIFO_MASK];
+    f->head++; 
+    return c;
+}
 void uart_init() {
     volatile unsigned int reg;
     reg = *GPFSEL1;
@@ -32,19 +61,60 @@ void uart_init() {
     *AUX_MU_BAUD_REG = 270;
     *AUX_MU_IIR_REG  = 6;
     *AUX_MU_CNTL_REG = 3;
+
+    *AUX_MU_IER_REG = 1; 
+    *ENABLE_IRQs1 = 1<<29; // Enable AUX interrupt in the interrupt controller
+}
+void rx_fifo_push(char c) {
+    fifo_push(c, &rx_fifo);
+}
+
+char tx_fifo_pop(void) {
+    return fifo_pop(&tx_fifo);
+}
+
+uint32_t tx_fifo_count(void) {
+    return fifo_count(&tx_fifo);
+}
+
+int tx_fifo_is_empty(void) {
+    return fifo_count(&tx_fifo) == 0;
 }
 void uart_send(unsigned int c) {
+    /*
     while (!(*AUX_MU_LSR_REG & 0x20)) {
-        /*
-        bit_5 == 1 -> writable
-        0x20 = 0000 0000 0010 0000
-        ref BCM2837-ARM-Peripherals p5
-        */
+        
+        //bit_5 == 1 -> writable
+        //0x20 = 0000 0000 0010 0000
+        //ref BCM2837-ARM-Peripherals p5
         asm volatile("nop");
     }
     // write data to AUX_MU_IO_REG
     *AUX_MU_IO_REG = c;
+    */
+    while (fifo_count(&tx_fifo) >= UART_FIFO_SIZE) {
+        // 等待 FIFO 有空位
+        asm volatile("nop");
+    }
+    fifo_push((char)c, &tx_fifo);
+    *AUX_MU_IER_REG |= 0x02;
 }
+char uart_getc() {
+    /*
+    while (!(*AUX_MU_LSR_REG & 0x01)) {
+        asm volatile("nop");
+    }
+    return (char)(*AUX_MU_IO_REG);
+    */
+    
+    // 只要 FIFO 是空的就等待 (資料由 ISR 負責塞入)
+    while (fifo_count(&rx_fifo) == 0) {
+        asm volatile("nop");
+    }
+    return fifo_pop(&rx_fifo);
+
+}
+
 void uart_readline_for_boot(char *buf) {
     int  i = 0;
     char c;
@@ -88,12 +158,7 @@ void uart_readline(char *buf, int max_len) {
         }
     }
 }
-char uart_getc() {
-    while (!(*AUX_MU_LSR_REG & 0x01)) {
-        asm volatile("nop");
-    }
-    return (char)(*AUX_MU_IO_REG);
-}
+
 void uart_puts(const char *s) {
     while (*s) {
         if (*s == '\n') uart_send('\r');

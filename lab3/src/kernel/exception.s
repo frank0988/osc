@@ -73,13 +73,13 @@ exception_vector_table:
 
 sync_handler_el1h:
     save_all
-    bl sync_handler_c
+    bl sync_handler_el1h_c
     load_all
     eret
 
 irq_handler_el1h:
     save_all
-    bl irq_handler_c
+    bl irq_handler_el1h_c
     load_all
     eret
 
@@ -101,11 +101,19 @@ fiq_handler_el1h:
 serror_handler_el1h:
     b serror_handler_el1h
 
-/* Lower EL (AArch64) - 先挂起 */
+/* Lower EL (AArch64) - 处理用户程序的异常 */
 sync_handler_el0_64:
-    b sync_handler_el0_64
+    save_all
+    bl sync_handler_el0_64_c
+    load_all
+    eret
+
 irq_handler_el0_64:
-    b irq_handler_el0_64
+    save_all
+    bl irq_handler_el0_64_c
+    load_all
+    eret
+
 fiq_handler_el0_64:
     b fiq_handler_el0_64
 serror_handler_el0_64:

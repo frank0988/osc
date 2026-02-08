@@ -72,15 +72,26 @@ void find_callback(const char *name, const char *data, unsigned int size, void *
     }
 }
 
-void cpio_cat(void *addr, const char *filename) {
+const char* cpio_get_file(void *addr, const char *filename, unsigned int *out_size) {
     find_ctx ctx = {.target = filename, .data = 0, .size = 0};
-
+    
     cpio_for_each(addr, find_callback, &ctx);
+    
+    if (ctx.data && out_size) {
+        *out_size = ctx.size;
+    }
+    
+    return ctx.data;  // 如果未找到返回 NULL
+}
 
-    if (ctx.data) {
+void cpio_cat(void *addr, const char *filename) {
+    unsigned int size = 0;
+    const char *data = cpio_get_file(addr, filename, &size);
+
+    if (data) {
         // 印出檔案內容 (注意檔案可能不是以 \0 結尾，需根據 size 印出)
-        for (unsigned int i = 0; i < ctx.size; i++) {
-            uart_send(ctx.data[i]);
+        for (unsigned int i = 0; i < size; i++) {
+            uart_send(data[i]);
         }
         uart_puts("\n");
     } else {

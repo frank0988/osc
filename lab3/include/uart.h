@@ -2,10 +2,11 @@
 #define UART_H
 
 #include <stdint.h>
+#include <stddef.h>
 #define MMIO_BASE 0x3F000000
 #define AUX_BASE  MMIO_BASE + 0x215000
-#define NULL      ((void *)0)
-typedef unsigned long size_t;
+#define IRQ_BASE  MMIO_BASE + 0xB000
+
 #define AUX_ENABLES     ((volatile unsigned int *)(AUX_BASE + 0x04))
 #define AUX_MU_CNTL_REG ((volatile unsigned int *)(AUX_BASE + 0x60))
 #define AUX_MU_IER_REG  ((volatile unsigned int *)(AUX_BASE + 0x44))
@@ -15,6 +16,24 @@ typedef unsigned long size_t;
 #define AUX_MU_BAUD_REG ((volatile unsigned int *)(AUX_BASE + 0x68))
 #define AUX_MU_IIR_REG  ((volatile unsigned int *)(AUX_BASE + 0x48))
 #define AUX_MU_IO_REG   ((volatile unsigned int *)(AUX_BASE + 0x40))
+
+#define ENABLE_IRQs1    ((volatile unsigned int *)(IRQ_BASE + 0x210))
+
+#define UART_FIFO_SIZE 256
+#define FIFO_MASK (UART_FIFO_SIZE - 1)
+typedef struct{
+    char buffer[UART_FIFO_SIZE];
+    volatile uint32_t head;
+    volatile uint32_t tail;
+} uart_fifo_t;
+
+unsigned int atoi(char *s);
+
+void rx_fifo_push(char c);
+char tx_fifo_pop(void);
+uint32_t tx_fifo_count(void);
+int tx_fifo_is_empty(void);
+
 void  uart_init();
 void  uart_send(unsigned int c);
 void  uart_readline(char *buf, int max_len);
