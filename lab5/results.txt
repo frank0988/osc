@@ -1,0 +1,7 @@
+syscall.img
+# run syscall.img
+Loading user program: syscall.img (0003C488 bytes)
+Process start, pid is: 0
+#
+Not a vaild command!
+#
